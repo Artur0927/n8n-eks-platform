@@ -26,7 +26,7 @@ module "alb_controller_irsa" {
 
   oidc_providers = {
     main = {
-      provider_arn               = module.eks.oidc_provider_arn
+      provider_arn               = aws_iam_openid_connect_provider.eks.arn
       namespace_service_accounts = ["kube-system:aws-load-balancer-controller"]
     }
   }
@@ -44,7 +44,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   set {
     name  = "clusterName"
-    value = module.eks.cluster_name
+    value = aws_eks_cluster.main.name
   }
 
   set {
@@ -63,7 +63,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
 
   depends_on = [
-    module.eks,
+    aws_eks_cluster.main,
     module.alb_controller_irsa
   ]
 }

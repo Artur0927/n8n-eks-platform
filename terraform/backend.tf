@@ -1,9 +1,12 @@
-terraform {
-  backend "s3" {
-    bucket         = "n8n-eks-terraform-state-20260211143152333400000001"
-    key            = "terraform/state"
-    region         = "us-east-1"
-    dynamodb_table = "n8n-eks-terraform-locks"
-    encrypt        = true
-  }
-}
+# Remote state backend — uncomment after running bootstrap/
+# Replace the bucket name with the output from: cd bootstrap && terraform output s3_bucket_name
+#
+# terraform {
+#   backend "s3" {
+#     bucket         = "YOUR_BUCKET_NAME_HERE"
+#     key            = "terraform/state"
+#     region         = "us-east-1"            # Must match your var.region
+#     dynamodb_table = "n8n-eks-terraform-locks"
+#     encrypt        = true
+#   }
+# }

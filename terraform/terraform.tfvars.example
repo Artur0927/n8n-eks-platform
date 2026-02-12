@@ -1,0 +1,37 @@
+# ==============================================================================
+# n8n EKS Platform — Terraform Configuration
+# ==============================================================================
+# Copy this file to terraform.tfvars and customize the values below.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# All variables have sensible defaults — you only need to override what you
+# want to change. At minimum, set the region to your preferred AWS region.
+# ==============================================================================
+
+# Project
+# project_name = "n8n-platform"   # Prefix for all resource names
+# environment  = "dev"            # dev | staging | prod
+
+# AWS
+# region = "us-east-1"            # AWS region for all resources
+
+# Network
+# vpc_cidr             = "10.0.0.0/16"
+# public_subnet_cidrs  = ["10.0.1.0/24", "10.0.3.0/24"]
+# private_subnet_cidrs = ["10.0.2.0/24", "10.0.4.0/24"]
+
+# EKS Cluster
+# eks_version              = "1.29"
+# eks_node_instance_types  = ["t3.small"]       # t3.medium recommended for production
+# eks_node_capacity_type   = "ON_DEMAND"        # ON_DEMAND or SPOT
+# eks_node_disk_size       = 20                 # GB per node
+# eks_node_desired_size    = 1
+# eks_node_min_size        = 1
+# eks_node_max_size        = 3
+
+# Tags (merged into every resource)
+# common_tags = {
+#   ManagedBy = "Terraform"
+#   Team      = "Platform Engineering"
+# }

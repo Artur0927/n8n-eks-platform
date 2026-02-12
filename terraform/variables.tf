@@ -1,9 +1,9 @@
 # Project Configuration
 
 variable "project_name" {
-  description = "Name of the project, used for resource naming and tagging"
+  description = "Name prefix for all resources (e.g. n8n, myapp)"
   type        = string
-  default     = "k8s-platform"
+  default     = "n8n-platform"
 }
 
 variable "environment" {
@@ -20,13 +20,13 @@ variable "environment" {
 # AWS Configuration
 
 variable "region" {
-  description = "AWS region where resources will be created"
+  description = "AWS region for all resources"
   type        = string
   default     = "us-east-1"
 }
 
 variable "availability_zones_count" {
-  description = "Number of availability zones to use (min 2 for HA)"
+  description = "Number of AZs to use (min 2 for high availability)"
   type        = number
   default     = 2
 
@@ -39,7 +39,7 @@ variable "availability_zones_count" {
 # Network Configuration
 
 variable "vpc_cidr" {
-  description = "CIDR block for VPC (provides 65,536 IP addresses)"
+  description = "CIDR block for VPC"
   type        = string
   default     = "10.0.0.0/16"
 }
@@ -56,27 +56,61 @@ variable "private_subnet_cidrs" {
   default     = ["10.0.2.0/24", "10.0.4.0/24"]
 }
 
-# NAT Configuration
+# EKS Configuration
 
-variable "nat_instance_type" {
-  description = "EC2 instance type for NAT instance (t3.micro is cost-effective)"
+variable "eks_version" {
+  description = "Kubernetes version for the EKS cluster"
   type        = string
-  default     = "t3.micro"
+  default     = "1.29"
 }
 
-variable "enable_nat_instance_monitoring" {
-  description = "Enable detailed CloudWatch monitoring for NAT instance"
-  type        = bool
-  default     = false
+variable "eks_node_instance_types" {
+  description = "EC2 instance types for the EKS node group"
+  type        = list(string)
+  default     = ["t3.small"]
+}
+
+variable "eks_node_capacity_type" {
+  description = "Capacity type for nodes: ON_DEMAND or SPOT"
+  type        = string
+  default     = "ON_DEMAND"
+
+  validation {
+    condition     = contains(["ON_DEMAND", "SPOT"], var.eks_node_capacity_type)
+    error_message = "Capacity type must be ON_DEMAND or SPOT."
+  }
+}
+
+variable "eks_node_disk_size" {
+  description = "Disk size (GB) for each worker node"
+  type        = number
+  default     = 20
+}
+
+variable "eks_node_desired_size" {
+  description = "Desired number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "eks_node_min_size" {
+  description = "Minimum number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "eks_node_max_size" {
+  description = "Maximum number of worker nodes (for auto-scaling)"
+  type        = number
+  default     = 3
 }
 
 # Tags
 
 variable "common_tags" {
-  description = "Common tags to apply to all resources"
+  description = "Common tags applied to all resources"
   type        = map(string)
   default = {
     ManagedBy = "Terraform"
-    Owner     = "DevOps Team"
   }
 }

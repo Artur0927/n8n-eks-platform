@@ -37,7 +37,7 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
 resource "aws_eks_cluster" "main" {
   name     = local.kubernetes_cluster_name
   role_arn = aws_iam_role.eks_cluster_role.arn
-  version  = "1.29"
+  version  = var.eks_version
 
   vpc_config {
     subnet_ids = concat(
@@ -104,7 +104,7 @@ resource "aws_iam_role_policy_attachment" "eks_container_registry_policy" {
   role       = aws_iam_role.eks_node_group_role.name
 }
 
-# Managed node group — On-Demand for stability, switchable to Spot for cost savings
+# Managed node group
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${local.name_prefix}-node-group"
@@ -117,19 +117,19 @@ resource "aws_eks_node_group" "main" {
   ]
 
   scaling_config {
-    desired_size = 1
-    max_size     = 3
-    min_size     = 1
+    desired_size = var.eks_node_desired_size
+    max_size     = var.eks_node_max_size
+    min_size     = var.eks_node_min_size
   }
 
   update_config {
     max_unavailable = 1
   }
 
-  instance_types = ["t3.small"]
+  instance_types = var.eks_node_instance_types
   ami_type       = "AL2_x86_64"
-  capacity_type  = "ON_DEMAND"
-  disk_size      = 20
+  capacity_type  = var.eks_node_capacity_type
+  disk_size      = var.eks_node_disk_size
 
   labels = {
     Environment = var.environment

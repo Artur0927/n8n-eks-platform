@@ -207,29 +207,64 @@ flowchart LR
 
 ## 🚀 Quick Start
 
-**Prerequisites:** `AWS CLI v2` · `Terraform ≥ 1.7` · `kubectl v1.29+` · `Helm ≥ 3.14`
+**Prerequisites:** `AWS CLI v2` · `Terraform ≥ 1.5` · `kubectl v1.29+` · `Helm ≥ 3.14`
 
 ```bash
-# 1. Deploy Infrastructure
-cd terraform && terraform init && terraform apply -auto-approve
+# 1. Clone the repository
+git clone https://github.com/Artur0927/n8n-eks-platform.git
+cd n8n-eks-platform
 
-# 2. Configure kubectl
-aws eks update-kubeconfig --region us-east-1 --name k8s-platform-dev-eks
+# 2. Configure your variables
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+# Edit terraform/terraform.tfvars — set your region, instance types, etc.
 
-# 3. Deploy n8n (Helm)
-helm install n8n ./helm/n8n --namespace n8n --create-namespace
+# 3. Deploy infrastructure
+cd terraform
+terraform init
+terraform apply
 
-# 4. Deploy Monitoring
+# 4. Configure kubectl (uses your terraform variables automatically)
+aws eks update-kubeconfig \
+  --region $(terraform output -raw kubectl_config_command | grep -oP '(?<=--region )\S+') \
+  --name $(terraform output -raw eks_cluster_name)
+
+# 5. Deploy n8n via Helm
+cd ..
+helm upgrade --install n8n ./helm/n8n \
+  --namespace n8n --create-namespace \
+  --set postgres.credentials.password=YOUR_SECURE_PASSWORD \
+  --set n8n.encryptionKey=YOUR_ENCRYPTION_KEY \
+  --wait --timeout 10m
+
+# 6. Deploy monitoring stack (optional)
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace \
-  --set grafana.adminPassword=<YOUR_PASSWORD> \
+  --set grafana.adminPassword=YOUR_GRAFANA_PASSWORD \
   --wait --timeout 5m
+```
 
-# 5. Access Services
+**Access your services:**
+```bash
 kubectl port-forward svc/n8n -n n8n 5678:5678           # n8n    → localhost:5678
 kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80  # Grafana → localhost:3000
 ```
+
+<details>
+<summary><strong>Optional: Enable Remote State (S3 Backend)</strong></summary>
+
+```bash
+# 1. Bootstrap the state bucket
+cd terraform/bootstrap
+terraform init && terraform apply
+
+# 2. Copy the bucket name from the output
+terraform output s3_bucket_name
+
+# 3. Uncomment and update terraform/backend.tf with your bucket name
+# 4. Re-initialize: cd .. && terraform init (answer "yes" to migrate state)
+```
+</details>
 
 ---
 
@@ -237,30 +272,36 @@ kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80  # Grafana →
 
 ```
 n8n-eks-platform/
-├── .github/workflows/         # CI/CD Pipelines
-│   ├── terraform-plan.yml     #   PR → terraform plan
-│   ├── terraform-apply.yml    #   Manual → apply/destroy
-│   ├── deploy-n8n.yml         #   Push → deploy to EKS
-│   └── helm-lint.yml          #   PR → lint Helm chart
-├── terraform/                 # Infrastructure as Code
-│   ├── eks.tf                 #   EKS cluster + node group + OIDC
-│   ├── vps.tf                 #   VPC, subnets, route tables
-│   ├── nat.tf                 #   NAT Gateway + Elastic IP
-│   ├── alb.tf                 #   ALB Controller (IRSA)
-│   ├── security_groups.tf     #   Network security rules
-│   ├── variables.tf / outputs.tf / locals.tf / provider.tf
-├── k8s/                       # Kubernetes Manifests
-│   ├── namespace.yaml         #   n8n namespace
-│   ├── n8n-secrets.yaml       #   Secrets (base64 encoded)
-│   ├── postgres.yaml          #   PostgreSQL StatefulSet
-│   ├── redis.yaml             #   Redis Deployment
-│   ├── n8n-main.yaml          #   n8n Main (UI/API/Webhooks)
-│   └── n8n-worker.yaml        #   n8n Worker (queue executor)
-├── helm/n8n/                  # Helm Chart
-│   ├── Chart.yaml             #   Chart metadata
-│   ├── values.yaml            #   Configurable values
-│   └── templates/             #   Templated K8s resources + Ingress
-├── docs/screenshots/          # Infrastructure screenshots
+├── .github/workflows/              # CI/CD Pipelines
+│   ├── terraform-plan.yml          #   PR → terraform plan + PR comment
+│   ├── terraform-apply.yml         #   Manual → apply / destroy
+│   ├── deploy-n8n.yml              #   Push to main → deploy to EKS
+│   └── helm-lint.yml               #   PR → lint Helm chart
+├── terraform/                      # Infrastructure as Code
+│   ├── versions.tf                 #   Provider version constraints
+│   ├── variables.tf                #   All configurable inputs
+│   ├── terraform.tfvars.example    #   Example variable values
+│   ├── provider.tf                 #   AWS / Helm / K8s providers
+│   ├── backend.tf                  #   S3 remote state (optional)
+│   ├── locals.tf                   #   Computed values
+│   ├── vps.tf                      #   VPC, subnets, route tables
+│   ├── eks.tf                      #   EKS cluster + node group + OIDC
+│   ├── nat.tf                      #   NAT Gateway + Elastic IP
+│   ├── alb.tf                      #   ALB Controller (IRSA)
+│   ├── security_groups.tf          #   Network security rules
+│   ├── outputs.tf                  #   Terraform outputs
+│   └── bootstrap/                  #   One-time S3 + DynamoDB setup
+├── helm/n8n/                       # Helm Chart
+│   ├── Chart.yaml                  #   Chart metadata
+│   ├── values.yaml                 #   Default values (override at deploy)
+│   └── templates/                  #   Templated K8s resources + Ingress
+├── k8s/                            # Raw Kubernetes Manifests (reference)
+│   ├── namespace.yaml              #   n8n namespace
+│   ├── postgres.yaml               #   PostgreSQL Deployment + Service
+│   ├── redis.yaml                  #   Redis Deployment + Service
+│   ├── n8n-main.yaml               #   n8n Main (UI/API/Webhooks)
+│   └── n8n-worker.yaml             #   n8n Worker (queue executor)
+├── docs/screenshots/               # Infrastructure screenshots
 └── README.md
 ```
 

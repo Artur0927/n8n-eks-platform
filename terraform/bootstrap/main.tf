@@ -1,9 +1,30 @@
+# Bootstrap — creates the S3 bucket and DynamoDB table for remote Terraform state
+# Run this ONCE before enabling the S3 backend in ../backend.tf
+#
+# Usage:
+#   cd terraform/bootstrap
+#   terraform init
+#   terraform apply
+#   # Copy the s3_bucket_name output into ../backend.tf
+
+variable "region" {
+  description = "AWS region for the state bucket"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "project_name" {
+  description = "Project name prefix for resource naming"
+  type        = string
+  default     = "n8n-eks"
+}
+
 provider "aws" {
-  region = "us-east-1"
+  region = var.region
 }
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket_prefix = "n8n-eks-terraform-state-"
+  bucket_prefix = "${var.project_name}-terraform-state-"
   force_destroy = true
 }
 
@@ -24,7 +45,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
 }
 
 resource "aws_dynamodb_table" "terraform_locks" {
-  name         = "n8n-eks-terraform-locks"
+  name         = "${var.project_name}-terraform-locks"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
 
@@ -35,9 +56,11 @@ resource "aws_dynamodb_table" "terraform_locks" {
 }
 
 output "s3_bucket_name" {
-  value = aws_s3_bucket.terraform_state.bucket
+  description = "Name of the S3 bucket for Terraform state — paste this into ../backend.tf"
+  value       = aws_s3_bucket.terraform_state.bucket
 }
 
 output "dynamodb_table_name" {
-  value = aws_dynamodb_table.terraform_locks.name
+  description = "Name of the DynamoDB table for state locking"
+  value       = aws_dynamodb_table.terraform_locks.name
 }
