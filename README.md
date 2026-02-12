@@ -4,9 +4,6 @@
 
 ### Kubernetes · Terraform · CI/CD · Monitoring
 
-[![Terraform Plan](https://github.com/Artur0927/n8n-eks-platform/actions/workflows/terraform-plan.yml/badge.svg)](https://github.com/Artur0927/n8n-eks-platform/actions/workflows/terraform-plan.yml)
-[![Deploy n8n](https://github.com/Artur0927/n8n-eks-platform/actions/workflows/deploy-n8n.yml/badge.svg)](https://github.com/Artur0927/n8n-eks-platform/actions/workflows/deploy-n8n.yml)
-[![Helm Lint](https://github.com/Artur0927/n8n-eks-platform/actions/workflows/helm-lint.yml/badge.svg)](https://github.com/Artur0927/n8n-eks-platform/actions/workflows/helm-lint.yml)
 
 ![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=FF9900)
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)
