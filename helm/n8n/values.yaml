@@ -1,0 +1,89 @@
+# =============================================================================
+# n8n Helm Chart - Configurable Values
+# =============================================================================
+
+# -- Namespace for all resources
+namespace: n8n
+
+# -- n8n configuration
+n8n:
+  image:
+    repository: n8nio/n8n
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Main process (UI, webhooks, API)
+  main:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  # Worker process (executes workflows)
+  worker:
+    replicas: 1
+    concurrency: 10
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  # Encryption key for credentials stored in DB — override at deploy time
+  encryptionKey: "CHANGE_ME"
+  timezone: "Asia/Yerevan"
+
+# -- PostgreSQL configuration
+postgres:
+  image:
+    repository: postgres
+    tag: "15-alpine"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  credentials:
+    user: "n8n"
+    password: "CHANGE_ME"
+    database: "n8n"
+
+# -- Redis configuration
+redis:
+  image:
+    repository: redis
+    tag: "7-alpine"
+  maxMemory: "64mb"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# -- Ingress configuration (ALB)
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # For HTTPS (Requires Certificate ARN):
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:xxx:certificate/xxx
+    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    # alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix

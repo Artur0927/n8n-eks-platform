@@ -1,0 +1,13 @@
+apiVersion: v2
+name: n8n
+description: n8n workflow automation platform in queue mode with PostgreSQL and Redis
+type: application
+version: 1.0.0
+appVersion: "2.7.3"
+keywords:
+  - n8n
+  - workflow
+  - automation
+  - queue-mode
+maintainers:
+  - name: Artur Martirosyan

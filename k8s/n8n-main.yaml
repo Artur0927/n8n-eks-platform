@@ -1,0 +1,119 @@
+---
+# n8n Main Process (handles UI, webhooks, API)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n-main
+  namespace: n8n
+  labels:
+    app: n8n
+    component: main
+    app.kubernetes.io/part-of: n8n-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n
+      component: main
+  template:
+    metadata:
+      labels:
+        app: n8n
+        component: main
+    spec:
+      containers:
+        - name: n8n
+          image: n8nio/n8n:latest
+          ports:
+            - containerPort: 5678
+          env:
+            # Queue mode configuration
+            - name: EXECUTIONS_MODE
+              value: "queue"
+            - name: QUEUE_BULL_REDIS_HOST
+              value: "redis.n8n.svc.cluster.local"
+            - name: QUEUE_BULL_REDIS_PORT
+              value: "6379"
+
+            # PostgreSQL configuration
+            - name: DB_TYPE
+              value: "postgresdb"
+            - name: DB_POSTGRESDB_HOST
+              value: "postgres.n8n.svc.cluster.local"
+            - name: DB_POSTGRESDB_PORT
+              value: "5432"
+            - name: DB_POSTGRESDB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: POSTGRES_DB
+            - name: DB_POSTGRESDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: POSTGRES_USER
+            - name: DB_POSTGRESDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: POSTGRES_PASSWORD
+
+            # Encryption key for stored credentials
+            - name: N8N_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: N8N_ENCRYPTION_KEY
+
+            # General settings
+            - name: N8N_HOST
+              value: "0.0.0.0"
+            - name: N8N_PORT
+              value: "5678"
+            - name: N8N_PROTOCOL
+              value: "http"
+            - name: GENERIC_TIMEZONE
+              value: "Asia/Yerevan"
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+---
+# n8n Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n
+  namespace: n8n
+  labels:
+    app: n8n
+    component: main
+    app.kubernetes.io/part-of: n8n-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5678
+      targetPort: 5678
+      name: http
+  selector:
+    app: n8n
+    component: main
